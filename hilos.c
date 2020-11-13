@@ -9,7 +9,8 @@
 # include <pthread.h>
 
 //https://www.tutorialspoint.com/c_standard_library/c_function_clock.htm
-
+//https://stackoverflow.com/questions/10509660/getting-getrusage-to-measure-system-time-in-c
+//https://linux.die.net/man/2/getrusage
 
 struct timeval t0 , t1 ; double delta = 0.0;//gettimeofday
 clock_t start_t, end_t; double total_t; //clock
