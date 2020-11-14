@@ -6,6 +6,5 @@ fork: fork.c
 hilos: hilos.c
 	gcc hilos.c -o hilos -l pthread 
 
-clean:
-	 rm *.o ./build/*
+
 

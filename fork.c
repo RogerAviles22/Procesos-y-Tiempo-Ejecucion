@@ -1,55 +1,51 @@
 # include <sys/types.h>
 # include <sys/time.h>
-#include <sys/wait.h>
+# include <sys/wait.h>
+# include <sys/resource.h>
 # include <time.h>
 # include <unistd.h>
 # include <stdio.h>
 # include <stdlib.h>
 #include <getopt.h>
+#include <stdbool.h>
+#include <string.h>
 
 bool cflag = false;
 bool gflag = false;
 bool rflag = false;
 
-int main (int argc, char *argv[]) {
+int main (int argc, char **argv) {
 	struct timeval t0 , t1 ; //gettimeofday
 	clock_t start_t, end_t; double total_t; //clock
-	int repeticion, opt;
-	pthread_t t_repeticion;
-
-
-	/*if(argc!=3){
-		printf("¡Valor de repetición no ingresado\n");
-		return -1;
-	}*/
+	struct rusage usage; struct timeval ru_start, ru_end;//getrusage
+	int repeticion;
+	char opt;
 
 	while( (opt= getopt(argc, argv, "c:g:r:h")) != -1 ){
 		switch(opt){
-			case "c":
+			case 'c':
 				cflag = true;
-				repeticion = (int) optarg;
 				break;
-			case "g":
+			case 'g':
 				gflag = true;
-				repeticion = (int) optarg;
 				break;
-			case "r":
+			case 'r':
 				rflag = true;
-				repeticion = (int) optarg;
 				break;
-			case "h"
+			case 'h':
 			default:
-				printf("Calcula el tiempo de ejecución de: \n");
+				printf("Calcula el tiempo de ejecución de las tareas con: \n");
 				printf("gettimeofday>>\t ./fork -g <num_tareas> \n");
-				printf("clock>>\t ./fork -c <num_tareas> \n");
-				printf("getrusage>>\t ./fork -c <num_tareas> \n");
+				printf("clock>>\t\t ./fork -c <num_tareas> \n");
+				printf("getrusage>>\t ./fork -r <num_tareas> \n");
 				return 0;
 
 		}
-
 	}
 
-	//repeticion = atoi(argv[1]);
+	printf("----PROCESOS");
+
+	repeticion = atoi(argv[2]);
 
 	if(repeticion<0){
 		printf("¡Número menor a 0 procesos por crear!\n");
@@ -62,7 +58,7 @@ int main (int argc, char *argv[]) {
 	int id = -1;
 
 	if (gflag){
-		printf("---GETTIMEOFDAY---\n");
+		printf("\t\t\t---GETTIMEOFDAY---\n");
 		gettimeofday (&t0 , NULL );
 		for (int i = 0 ; i < repeticion ; i ++ ) {
 			id = fork ();
@@ -72,14 +68,14 @@ int main (int argc, char *argv[]) {
 		if ( id > 0) {
 			wait(NULL);
 			gettimeofday (&t1 , NULL );
-			unsigned int t_final = t1.tv_sec *1000000+ t1.tv_usec ;
-			unsigned int t_inicial = t0.tv_sec *1000000+ t0.tv_usec ;
+			unsigned int t_final = t1.tv_sec *1000+ t1.tv_usec/1000 ;
+			unsigned int t_inicial = t0.tv_sec *1000+ t0.tv_usec/1000 ;
 			double delta = (t_final - t_inicial);
-			printf ( "Tiempo promedio en ms usando gettimeofday():!%f\n" , ((( delta ) /repeticion)/1000) ) ;
+			printf ( "Tiempo promedio en ms usando gettimeofday(): %f\n" ,  delta /repeticion ) ;
 		}
 
 	}else if (cflag){
-		printf("---CLOCK---\n");
+		printf("\t\t\t---CLOCK---\n");
 		start_t = clock();
 		for (int i = 0 ; i < repeticion ; i ++ ) {
 			id = fork ();
@@ -90,33 +86,28 @@ int main (int argc, char *argv[]) {
 			wait(NULL);
 			end_t = clock();
 			total_t = (double)(end_t - start_t) / 1000.0;
-	   		printf("Tiempo promedio en ms usando clock(): %f\n", total_t  );
+	   		printf("Tiempo promedio en ms usando clock(): %f\n", total_t/repeticion  );
 		}
 		
 	}else if(rflag){
-		printf("GETRUSAGE\n");
+		printf("\t\t\t---GETRUSAGE---\n");
 
-	}
+		getrusage(RUSAGE_CHILDREN, &usage);
+  		ru_start = usage.ru_stime;
+		for (int i = 0 ; i < repeticion ; i ++ ) {
+			id = fork ();
+			if ( id == 0)
+				return 0; 			
+		}
+		if ( id > 0) {
+			wait(NULL);
+			getrusage(RUSAGE_CHILDREN, &usage);
+  			ru_end = usage.ru_stime;
+			unsigned int t_final = ru_end.tv_sec *1000+ ru_end.tv_usec/1000 ;
+			unsigned int t_inicial = ru_start.tv_sec *1000+ ru_start.tv_usec/1000 ;
+			double delta = (t_final - t_inicial);
 
-	//gettimeofday (&t0 , NULL ) ;
-	start_t = clock();
-	for (int i = 0 ; i < repeticion ; i ++ ) {
-		id = fork ();
-		if ( id == 0){
-			//printf("Hola\n");
-			return 0; 
-		} 
+	   		printf("Tiempo promedio en ms usando getrusage(): %f\n", delta/repeticion  );
+		}
 	}
-	if ( id > 0) {
-		wait(NULL);
-		//gettimeofday (&t1 , NULL );
-		end_t = clock();
-		total_t = (double)(end_t - start_t) / 1000.0;
-   		printf("Total time taken by CPU: %f\n", total_t  );
-		/*unsigned int t_final = t1.tv_sec *1000000+ t1.tv_usec ;
-		unsigned int t_inicial = t0.tv_sec *1000000+ t0.tv_usec ;
-		double delta = (t_final - t_inicial);
-		printf ( "%f Milisegundos promedios para crear procesos!\n" , ((( delta ) /repeticion)/1000) ) ; */
-	}
-	//return 0;
 }
