@@ -92,7 +92,7 @@ int main (int argc, char **argv) {
 	}else if(rflag){
 		printf("\t\t\t---GETRUSAGE---\n");
 
-		getrusage(RUSAGE_CHILDREN, &usage);
+		getrusage(RUSAGE_SELF, &usage);
   		ru_start = usage.ru_stime;
 		for (int i = 0 ; i < repeticion ; i ++ ) {
 			id = fork ();
@@ -101,7 +101,7 @@ int main (int argc, char **argv) {
 		}
 		if ( id > 0) {
 			wait(NULL);
-			getrusage(RUSAGE_CHILDREN, &usage);
+			getrusage(RUSAGE_SELF, &usage);
   			ru_end = usage.ru_stime;
 			unsigned int t_final = ru_end.tv_sec *1000+ ru_end.tv_usec/1000 ;
 			unsigned int t_inicial = ru_start.tv_sec *1000+ ru_start.tv_usec/1000 ;

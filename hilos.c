@@ -88,7 +88,7 @@ int main(int argc, char *argv[]){
 	}else if(rflag){
 		printf("\t\t\t---GETRUSAGE---\n");
 		for (int i = 0; i < repeticion; ++i){
-			getrusage(RUSAGE_THREAD , &usage);
+			getrusage(RUSAGE_SELF , &usage);
 	  		start = usage.ru_stime;
 			pthread_create(&t_repeticion, NULL, saludo_gru, NULL);
 			pthread_join(t_repeticion, NULL);
@@ -106,6 +106,7 @@ void *saludo_gtod(void *arg){
 	unsigned int t_final = t1.tv_sec *1000000+ t1.tv_usec ;
 	unsigned int t_inicial = t0.tv_sec *1000000+ t0.tv_usec ;
 	delta += ( t_final - t_inicial );	
+	printf("\n");
 }
 
 void *saludo_clock(void *arg){
@@ -114,13 +115,13 @@ void *saludo_clock(void *arg){
 }
 
 void *saludo_gru(void *arg){
-	getrusage(RUSAGE_THREAD , &usage);
+	getrusage(RUSAGE_SELF , &usage);
   	end = usage.ru_stime;
   	unsigned int tu_final = end.tv_sec*1000 + end.tv_usec/1000;
   	unsigned int tu_inicial = start.tv_sec*1000 + start.tv_usec/1000;
 		/*printf("Started at: %ld.%ldms\n", start.tv_sec*1000, start.tv_usec/1000);
   		printf("Ended at: %ld.%ldms\n", end.tv_sec*1000, end.tv_usec/1000);*/
   	//printf("fin %d\n", tu_final);printf("init %d\n", tu_inicial);
-  	total_usage += (double)(-tu_final+tu_inicial) ;
+  	total_usage += (double)(tu_final-tu_inicial) ;
   	//printf("total %f\n", total_usage);
 }
